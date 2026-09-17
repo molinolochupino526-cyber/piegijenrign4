@@ -315,10 +315,17 @@ def layout_sentence_fit(words: Sequence[str], cfg: VideoConfig,
 
     while True:
         placed, height, cache = layout_sentence(words, cfg, max_width, font_size)
-        if height <= max_height or font_size <= cfg.font_size_min:
-            if height > max_height:
-                logger.debug("Предложение не вписалось даже кеглем %d (высота %d px)",
-                             font_size, height)
+        # Слово шире экрана переносом не спасти — помогает только кегль поменьше
+        widest = max((word.width for word in placed), default=0)
+        fits = height <= max_height and widest <= max_width
+
+        if fits or font_size <= cfg.font_size_min:
+            if not fits:
+                logger.debug(
+                    "Предложение не вписалось даже кеглем %d "
+                    "(высота %d px, самое широкое слово %d px)",
+                    font_size, height, widest,
+                )
             return SentenceLayout(words=placed, height=height,
                                   font_size=font_size, cache=cache)
         # Освобождаем неподошедшие клипы и пробуем кегль поменьше
